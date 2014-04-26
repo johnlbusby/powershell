@@ -1,0 +1,45 @@
+#Initialize Excel workbook and worksheet
+$Excel = New-Object -ComObject Excel.Application
+$Excel.Visible = $true
+$WorkBook = $Excel.WorkBooks.Add()
+$WorkBook.WorkSheets.Item(1).Name = "RawData"
+$RawDataSheet = $WorkBook.WorkSheets.Item("RawData")
+
+#Heading Row
+$RawDataSheet.Cells.Item(1,1) = "Common Name"
+$RawDataSheet.Cells.Item(1,2) = "Display Name"
+$RawDataSheet.Cells.Item(1,3) = "Given Name"
+$RawDataSheet.Cells.Item(1,4) = "Sur Name"
+$RawDataSheet.Cells.Item(1,5) = "EMai Address"
+$RawDataSheet.Cells.Item(1,6) = "Username"
+$RawDataSheet.Cells.Item(1,7) = "ZimbraID"
+$RawDataSheet.Cells.Item(1,8) = "Status"
+$RawDataSheet.Cells.Item(1,9) = "Last Logon"
+$RawDataSheet.Range("A1:I1").Font.Bold=$true
+
+$ZimbraPath = "C:\zKirby\ZimbraExport.txt"
+$FileString = [string]::Join([Environment]::NewLine,(Get-Content $ZimbraPath))
+$Results = $FileString.Split( [String[]]"# name", [StringSplitOptions]::RemoveEmptyEntries ) | `
+	select  @{Name="CommonName"; Expression={[string]([regex]::Match($_, "cn:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="DisplayName"; Expression={[string]([regex]::Match($_, "displayName:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="GivenName"; Expression={[string]([regex]::Match($_, "givenName:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="SurName"; Expression={[string]([regex]::Match($_, "sn:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="EMailAddress"; Expression={[string]([regex]::Match($_, "mail:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="Username"; Expression={[string]([regex]::Match($_, "uid:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="ZimbraID"; Expression={[string]([regex]::Match($_, "zimbraId:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="Status"; Expression={[string]([regex]::Match($_, "zimbraMailStatus:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}},
+            @{Name="LastLogon"; Expression={[string]([regex]::Match($_, "zimbraLastLogonTimestamp:\s([?<=(0-9)(A-z)].*)").Groups[1].Value)}}
+
+$x = 2 #Sets beginning row of data. Header is row 1
+$Results | % {
+	$RawDataSheet.Cells.Item($x,1) = $_.CommonName
+	$RawDataSheet.Cells.Item($x,2) = $_.DisplayName
+    $RawDataSheet.Cells.Item($x,3) = $_.GivenName
+    $RawDataSheet.Cells.Item($x,4) = $_.SurName
+    $RawDataSheet.Cells.Item($x,5) = $_.EMailAddress
+	$RawDataSheet.Cells.Item($x,6) = $_.Username
+	$RawDataSheet.Cells.Item($x,7) = $_.ZimbraID
+	$RawDataSheet.Cells.Item($x,8) = $_.Status
+	$RawDataSheet.Cells.Item($x,9) = $_.LastLogon
+	$x++}
+$RawDataSheet.UsedRange.EntireColumn.Autofit() | Out-Null
